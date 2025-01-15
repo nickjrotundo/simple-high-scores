@@ -4,6 +4,11 @@
 A simple Node.js-based server for managing high score submissions, retrievals, and displaying leaderboards.
 
 ---
+## **General Notes**
+  - I used an Oracle free-tier Ubuntu server for this. Any buntu/debian server will work with the install script. Any server that can run node can work but will require manual installation. 
+  - Testing can be done without a domain name, but one will be needed if trying to use on itch.io as the requests need to be https and domain required for SSL. 
+  - Be sure to allow inbound connections to TCP 3000 in the firewall in front of this server (like the Oracle network, or AWS, etc.)
+  - Uniqueid for a player can be obtained by hashing, for example, their IP plus some system info available to the browser. Or, use your own method. 
 
 ## **Installation**
 
@@ -66,11 +71,6 @@ A simple Node.js-based server for managing high score submissions, retrievals, a
   "hash": "computed_hash"
 }
 ```
-
-**Hash Generation**:
-- Concatenate the payload (excluding `hash`) with the shared secret key.
-- Generate a SHA-1 hash of the concatenated string.
-
 **Example Response**:
 ```json
 {
@@ -78,6 +78,34 @@ A simple Node.js-based server for managing high score submissions, retrievals, a
   "message": "High score submitted successfully"
 }
 ```
+**Hash Generation**:
+- Concatenate the payload (excluding `hash`) with the shared secret key.
+- Generate a SHA-1 hash of the concatenated string.
+
+**Pseudocode Implementation**:
+```pseudocode
+function send_high_score():
+    # Prepare payload with player data
+    payload = {
+        "initials": player_initials,
+        "score": player_high_score,
+        "uniqueid": player_uniqueid,
+        "timestamp": current_datetime()
+    }
+
+    # Add security hash
+    hash_input = JSON.stringify(payload) + secret_key
+    payload["hash"] = sha1(hash_input)
+
+    # Send payload to the server
+    response = http_request("POST", "/submit_high_score", payload)
+
+    if response.success:
+        return true
+    else:
+        return response.error
+```
+
 
 ---
 
@@ -92,7 +120,6 @@ A simple Node.js-based server for managing high score submissions, retrievals, a
   "uniqueid": "2da8590a418273ef5f826d5ab0ca31a7c9465da7"
 }
 ```
-
 **Example Response**:
 ```json
 {
@@ -111,6 +138,24 @@ A simple Node.js-based server for managing high score submissions, retrievals, a
   ]
 }
 ```
+**Pseudocode Implementation**:
+```pseudocode
+function retrieve_high_scores():
+    # Prepare payload with player unique ID
+    payload = {
+        "uniqueid": player_uniqueid
+    }
+
+    # Send payload to the server
+    response = http_request("POST", "/get_high_scores", payload)
+
+    if response.success:
+        return response.scores
+    else:
+        return response.error
+```
+
+
 
 ---
 
@@ -137,6 +182,20 @@ A simple Node.js-based server for managing high score submissions, retrievals, a
   ]
 }
 ```
+
+**Pseudocode Implementation**:
+```pseudocode
+function retrieve_top_10_scores():
+    # Send GET request to the server
+    response = http_request("GET", "/get_top_10_scores")
+
+    if response.success:
+        return response.scores
+    else:
+        return response.error
+```
+
+
 
 ---
 
